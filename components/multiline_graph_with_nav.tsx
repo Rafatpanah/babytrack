@@ -52,13 +52,11 @@ export default function MultiLineGraphWithBars(
   const svgRef = useRef<SVGSVGElement>(null);
   const svgLabelsRef = useRef<SVGSVGElement>(null);
 
-  const timeZoneOffsetSec = new Date().getTimezoneOffset() * 60 * 1;
+  const timeZoneOffsetMSec = new Date().getTimezoneOffset() * 60 * 1000;
   const timeZoneName = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   const oneDay = 1 * 24 * 60 * 60 * 1000;
   const oneHour = 1 * 60 * 60 * 1000;
-
-  lineGraphData;
 
   const dataRef = useRef(lineGraphData.data);
 
@@ -193,7 +191,7 @@ export default function MultiLineGraphWithBars(
 
   useEffect(() => {
     if (xAxisRef.current) {
-      let xAxis = d3.axisBottom(xScaleAll);
+      let xAxis = d3.axisBottom(xScale);
       d3.select(xAxisRef.current).call(xAxis).style("fontSize", 14);
     }
 
@@ -342,7 +340,9 @@ export default function MultiLineGraphWithBars(
 
   // function to format the dates for the date pickers
   const formatDate = (date: string | number | Date) =>
-    new Date(date).toISOString().slice(0, 10);
+    (typeof date === "object") === true || typeof date === "string"
+      ? new Date(date).toISOString().slice(0, 10)
+      : new Date(date - timeZoneOffsetMSec).toISOString().slice(0, 10);
 
   const updateSlider = ({ x, direction }: navSlider) => {
     // console.log({ direction });
@@ -802,7 +802,6 @@ export default function MultiLineGraphWithBars(
           <nav
             css={css`
               position: relative;
-              /* opacity: ${sliderState.width === 0 ? 0 : 1}; */
             `}
           >
             <svg
@@ -920,7 +919,7 @@ export default function MultiLineGraphWithBars(
               value={formatDate(dateRangeRef.current.start)}
               onChange={(event) => {
                 dateRangeRef.current.start = clamp(
-                  new Date(event.target.value).getTime(),
+                  new Date(event.target.value).getTime() - timeZoneOffsetMSec,
                   axisRangeAllDataFlat.x[0],
                   dateRangeRef.current.end
                 );
@@ -952,7 +951,7 @@ export default function MultiLineGraphWithBars(
               value={formatDate(dateRangeRef.current.end)}
               onChange={(event) => {
                 dateRangeRef.current.end = clamp(
-                  new Date(event.target.value).getTime(),
+                  new Date(event.target.value).getTime() - timeZoneOffsetMSec,
                   dateRangeRef.current.start,
                   axisRangeAllDataFlat.x[1]
                 );
