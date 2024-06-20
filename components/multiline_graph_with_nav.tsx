@@ -117,11 +117,34 @@ export default function MultiLineGraphWithBars(
       axisRangeAllData.map((point) => point.y).flat()
     ) as d3LinePoint,
   };
+
+  const allDataNoRef: d3Line[] = lineGraphData.data.map((currMetric, index) =>
+    currMetric.filter((curve) => lineGraphData.isRefLine[index] === false)
+  );
+
+  const axisRangeAllDataNoRef: d3LineRange[] = allDataNoRef.map(
+    (currMetric) => ({
+      x: d3.extent(currMetric.map((point) => point[0])) as d3LinePoint,
+      y: d3.extent(currMetric.map((point) => point[1])) as d3LinePoint,
+    })
+  );
+
+  const axisRangeAllDataFlatNoRef: d3LineRange = {
+    x: d3.extent(
+      axisRangeAllDataNoRef.map((point) => point.x).flat()
+    ) as d3LinePoint,
+    y: d3.extent(
+      axisRangeAllDataNoRef.map((point) => point.y).flat()
+    ) as d3LinePoint,
+  };
+
   const dateRangeRef = useRef({
-    start: axisRangeAllDataFlat.x[0],
-    end: axisRangeAllDataFlat.x[1],
+    start: axisRangeAllDataFlatNoRef.x[0],
+    end: axisRangeAllDataFlatNoRef.x[1],
     startPercent: 0.0,
-    endPercent: 1.0,
+    endPercent:
+      (axisRangeAllDataFlatNoRef.x[1] - axisRangeAllDataFlatNoRef.x[0]) /
+      (axisRangeAllDataFlat.x[1] - axisRangeAllDataFlat.x[0]),
   });
 
   const axisRangeFiltered: d3LineRange[] = dataRef.current.map(
@@ -281,7 +304,7 @@ export default function MultiLineGraphWithBars(
     // start: min,
     // width: totalWidth,
     start: 50,
-    width: 50,
+    width: 0,
   }));
   const sliderRef = useRef({
     start: sliderState.start,
@@ -507,8 +530,22 @@ export default function MultiLineGraphWithBars(
     });
   });
 
+  useEffect(() => {
+    setSliderState(() => ({
+      start: dateRangeRef.current.startPercent * totalWidth + min,
+      width:
+        (dateRangeRef.current.endPercent - dateRangeRef.current.startPercent) *
+        totalWidth,
+    }));
+  }, [totalWidth]);
+
   return (
-    <div>
+    <div
+      css={css`
+        position: relative;
+        opacity: ${sliderState.width === 0 ? 0 : 1};
+      `}
+    >
       <svg
         ref={svgRef}
         width="100%"
@@ -765,6 +802,7 @@ export default function MultiLineGraphWithBars(
           <nav
             css={css`
               position: relative;
+              /* opacity: ${sliderState.width === 0 ? 0 : 1}; */
             `}
           >
             <svg
@@ -803,7 +841,7 @@ export default function MultiLineGraphWithBars(
                 & > span {
                   display: block;
                   background-color: firebrick;
-                  width: 2vw;
+                  width: min(1.5vw, 10px);
                   height: 80%;
                   position: absolute;
                   top: 0;
@@ -899,7 +937,6 @@ export default function MultiLineGraphWithBars(
                   1
                 );
                 setSliderState((state) => ({
-                  ...state,
                   start: startPercent * totalWidth + min,
                   width: (endPercent - startPercent) * totalWidth,
                 }));
@@ -932,7 +969,6 @@ export default function MultiLineGraphWithBars(
                   1
                 );
                 setSliderState((state) => ({
-                  ...state,
                   start: startPercent * totalWidth + min,
                   width: (endPercent - startPercent) * totalWidth,
                 }));

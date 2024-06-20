@@ -13,7 +13,7 @@ import {
 } from "../../components/types";
 
 export default function Home() {
-  const girl_weight =
+  const girlWeight =
     // Month	L	M	S	2nd (2.3rd)	5th	10th	25th	50th	75th	90th	95th	98th (97.7th)
     // https://www.cdc.gov/growthcharts/who_charts.htm
     // P10 = 6
@@ -203,26 +203,27 @@ export default function Home() {
 
   const oneMonth = 30 * 24 * 60 * 60 * 1000;
   const kgToLb = 2.20462;
-  const dates = girl_weight.map((row) => row[0] * oneMonth);
+  const dates = girlWeight.map((row) => row[0] * oneMonth);
+  const girlWeightFiltered = girlWeight.filter((row) => row[0] <= 12);
 
-  const weight10 = girl_weight.map(
+  const weight10 = girlWeightFiltered.map(
     (row) => [row[0] * oneMonth + birthTime, row[6] * kgToLb] as d3LinePoint
   );
-  const weight50 = girl_weight.map(
+  const weight50 = girlWeightFiltered.map(
     (row) => [row[0] * oneMonth + birthTime, row[8] * kgToLb] as d3LinePoint
   );
-  const weight90 = girl_weight.map(
+  const weight90 = girlWeightFiltered.map(
     (row) => [row[0] * oneMonth + birthTime, row[10] * kgToLb] as d3LinePoint
   );
 
   return (
     <main>
       <h2
-      // css={css`
-      //   font-size: min(160px, 10vw);
-      // `}
+        css={css`
+          text-align: center;
+        `}
       >
-        test
+        Stuff n Things
       </h2>
       <div>
         <MultiLineGraph
@@ -230,7 +231,7 @@ export default function Home() {
             margin: { left: 50, right: 50, top: 60, bottom: 30 },
             totalWidth: 800,
             totalHeight: 300,
-            title: "Girl Weight Chart",
+            title: "Growth Chart (girl)",
             y1AxisTitle: "weight (lb)",
             data: [weight90, weight50, weight10, LunaWeight],
             lineLabel: ["90%", "50%", "10%", "Luna"],
