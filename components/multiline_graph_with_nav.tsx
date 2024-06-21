@@ -58,9 +58,12 @@ export default function MultiLineGraphWithBars(
   const oneDay = 1 * 24 * 60 * 60 * 1000;
   const oneHour = 1 * 60 * 60 * 1000;
 
-  const dataRef = useRef(lineGraphData.data);
+  // const dataRef = useRef(lineGraphData.data);
+
+  const [PlotData, setPlotData] = useState(() => lineGraphData.data);
 
   // console.log(JSON.stringify(lineGraphData.data, null, 2));
+  // console.log({ lineGraphData });
 
   // use the cursor position to update graph labels
   const [cursorLabel, setCursorLabel] = useState(() => ({
@@ -145,12 +148,10 @@ export default function MultiLineGraphWithBars(
       (axisRangeAllDataFlat.x[1] - axisRangeAllDataFlat.x[0]),
   });
 
-  const axisRangeFiltered: d3LineRange[] = dataRef.current.map(
-    (currMetric) => ({
-      x: d3.extent(currMetric.map((point) => point[0])) as d3LinePoint,
-      y: d3.extent(currMetric.map((point) => point[1])) as d3LinePoint,
-    })
-  );
+  const axisRangeFiltered: d3LineRange[] = PlotData.map((currMetric) => ({
+    x: d3.extent(currMetric.map((point) => point[0])) as d3LinePoint,
+    y: d3.extent(currMetric.map((point) => point[1])) as d3LinePoint,
+  }));
 
   const axisRangeFilteredFlat: d3LineRange = {
     x: d3.extent(
@@ -515,20 +516,22 @@ export default function MultiLineGraphWithBars(
   }, [ratio]);
 
   useEffect(() => {
-    dataRef.current = lineGraphData.data.map((currMetric) => {
-      const filteredData = currMetric.filter(
-        (point) =>
-          point[0] >= dateRangeRef.current.start &&
-          point[0] <= dateRangeRef.current.end
-      );
-      return filteredData.length > 0
-        ? filteredData
-        : [
-            [0, 0],
-            [0, 0],
-          ];
-    });
-  });
+    setPlotData(() =>
+      lineGraphData.data.map((currMetric) => {
+        const filteredData = currMetric.filter(
+          (point) =>
+            point[0] >= dateRangeRef.current.start &&
+            point[0] <= dateRangeRef.current.end
+        );
+        return filteredData.length > 0
+          ? filteredData
+          : [
+              [0, 0],
+              [0, 0],
+            ];
+      })
+    );
+  }, [sliderState, lineGraphData.data]);
 
   useEffect(() => {
     setSliderState(() => ({
@@ -669,7 +672,7 @@ export default function MultiLineGraphWithBars(
           </g>
           {/* graph data */}
           <g>
-            {dataRef.current.map((currMetric, index) => (
+            {PlotData.map((currMetric, index) => (
               <g key={index}>
                 <path
                   key={index}

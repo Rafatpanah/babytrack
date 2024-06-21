@@ -11,6 +11,7 @@ import {
   d3LineRange,
   XYPoint,
 } from "../../components/types";
+import { useState } from "react";
 
 export default function Home() {
   const girlWeight =
@@ -204,7 +205,10 @@ export default function Home() {
   const oneMonth = 30 * 24 * 60 * 60 * 1000;
   const kgToLb = 2.20462;
   const dates = girlWeight.map((row) => row[0] * oneMonth);
-  const girlWeightFiltered = girlWeight.filter((row) => row[0] <= 12);
+
+  const [filterTime, setFilterTime] = useState(() => 6);
+
+  const girlWeightFiltered = girlWeight.filter((row) => row[0] <= filterTime);
 
   const weight10 = girlWeightFiltered.map(
     (row) => [row[0] * oneMonth + birthTime, row[6] * kgToLb] as d3LinePoint
@@ -225,6 +229,79 @@ export default function Home() {
       >
         Stuff n Things
       </h2>
+
+      <label
+        css={css`
+          text-align: center;
+        `}
+      >
+        Select Display Time Range
+      </label>
+      <form
+        css={css`
+          text-align: center;
+        `}
+      >
+        <div
+          css={css`
+            & > input {
+              appearance: none;
+              background-color: transparent;
+              border: 2px solid #1a1a1a;
+              border-radius: 15px;
+              box-sizing: border-box;
+              color: #3b3b3b;
+              cursor: pointer;
+              display: inline-block;
+              font-family: Roobert, -apple-system, BlinkMacSystemFont,
+                "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji",
+                "Segoe UI Emoji", "Segoe UI Symbol";
+              font-size: min(2.3vw, 16px);
+              font-weight: 600;
+              line-height: normal;
+              margin: 5px;
+              min-height: min(6vw, 30px);
+              min-width: 0;
+              outline: none;
+              padding: min(1vw, 10px);
+              text-align: center;
+              text-decoration: none;
+              transition: all 300ms cubic-bezier(0.23, 1, 0.32, 1);
+              user-select: none;
+              -webkit-user-select: none;
+              touch-action: manipulation;
+              will-change: transform;
+              :hover {
+                color: #fff;
+                background-color: #1a1a1a;
+                box-shadow: rgba(0, 0, 0, 0.25) 0 8px 15px;
+                transform: translateY(-2px);
+              }
+              :active {
+                box-shadow: none;
+                transform: translateY(0);
+              }
+            }
+          `}
+        >
+          <input
+            type="button"
+            value="6 Months"
+            onClick={(event) => setFilterTime(6)}
+          ></input>
+          <input
+            type="button"
+            value="1 Year"
+            onClick={(event) => setFilterTime(12)}
+          ></input>
+          <input
+            type="button"
+            value="2 Years"
+            onClick={(event) => setFilterTime(24)}
+          ></input>
+        </div>
+      </form>
+
       <div>
         <MultiLineGraph
           {...{
