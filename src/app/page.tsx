@@ -197,6 +197,7 @@ export default function Home() {
     [Date.parse("22 Apr 2024 13:57:00 EST").valueOf(), 9 + 9 / 16],
     [Date.parse("10 May 2024 13:56:00 EST").valueOf(), 11 + 4.5 / 16],
     [Date.parse("05 Jun 2024 12:24:00 EST").valueOf(), 12 + 12.4 / 16],
+    [Date.parse("21 Jun 2024 12:24:00 EST").valueOf(), 14 + 2 / 16],
   ] as d3Line;
 
   const curr_time = new Date().valueOf();
@@ -206,9 +207,21 @@ export default function Home() {
   const kgToLb = 2.20462;
   const dates = girlWeight.map((row) => row[0] * oneMonth);
 
-  const [filterTime, setFilterTime] = useState(() => 6);
+  const filterOptions = [
+    { label: "3 Months", months: 3 },
+    { label: "6 Months", months: 6 },
+    { label: "1 Year", months: 12 },
+    { label: "2 Years", months: 24 },
+  ];
 
-  const girlWeightFiltered = girlWeight.filter((row) => row[0] <= filterTime);
+  const [filterTime, setFilterTime] = useState(() => ({
+    selected: 2,
+    value: filterOptions[2].months,
+  }));
+
+  const girlWeightFiltered = girlWeight.filter(
+    (row) => row[0] <= filterTime.value
+  );
 
   const weight10 = girlWeightFiltered.map(
     (row) => [row[0] * oneMonth + birthTime, row[6] * kgToLb] as d3LinePoint
@@ -230,75 +243,72 @@ export default function Home() {
         Stuff n Things
       </h2>
 
-      <label
+      <text
         css={css`
+          display: block;
           text-align: center;
+          padding: 2px;
         `}
       >
         Select Display Time Range
-      </label>
+      </text>
       <form
         css={css`
           text-align: center;
+          padding-bottom: 20px;
         `}
       >
-        <div
-          css={css`
-            & > input {
-              appearance: none;
-              background-color: transparent;
-              border: 2px solid #1a1a1a;
-              border-radius: 15px;
-              box-sizing: border-box;
-              color: #3b3b3b;
-              cursor: pointer;
-              display: inline-block;
-              font-family: Roobert, -apple-system, BlinkMacSystemFont,
-                "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji",
-                "Segoe UI Emoji", "Segoe UI Symbol";
-              font-size: min(2.3vw, 16px);
-              font-weight: 600;
-              line-height: normal;
-              margin: 5px;
-              min-height: min(6vw, 30px);
-              min-width: 0;
-              outline: none;
-              padding: min(1vw, 10px);
-              text-align: center;
-              text-decoration: none;
-              transition: all 300ms cubic-bezier(0.23, 1, 0.32, 1);
-              user-select: none;
-              -webkit-user-select: none;
-              touch-action: manipulation;
-              will-change: transform;
-              :hover {
-                color: #fff;
-                background-color: #1a1a1a;
-                box-shadow: rgba(0, 0, 0, 0.25) 0 8px 15px;
-                transform: translateY(-2px);
-              }
-              :active {
-                box-shadow: none;
-                transform: translateY(0);
-              }
-            }
-          `}
-        >
-          <input
-            type="button"
-            value="6 Months"
-            onClick={(event) => setFilterTime(6)}
-          ></input>
-          <input
-            type="button"
-            value="1 Year"
-            onClick={(event) => setFilterTime(12)}
-          ></input>
-          <input
-            type="button"
-            value="2 Years"
-            onClick={(event) => setFilterTime(24)}
-          ></input>
+        <div>
+          {filterOptions.map((filterOption, index) => (
+            <text
+              css={css`
+                appearance: none;
+                background-color: ${filterTime.selected === index
+                  ? `#1a1a1a`
+                  : `transparent`};
+                border: 2px solid #1a1a1a;
+                border-radius: 15px;
+                box-sizing: border-box;
+                color: ${filterTime.selected === index ? `#fff` : `#3b3b3b`};
+                cursor: pointer;
+                display: inline-block;
+                font-family: Roobert, -apple-system, BlinkMacSystemFont,
+                  "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji",
+                  "Segoe UI Emoji", "Segoe UI Symbol";
+                font-size: min(2.3vw, 16px);
+                font-weight: 600;
+                line-height: normal;
+                margin: 5px;
+                min-height: min(6vw, 30px);
+                min-width: 0;
+                outline: none;
+                padding: min(1vw, 10px);
+                text-align: center;
+                text-decoration: none;
+                transition: all 300ms cubic-bezier(0.23, 1, 0.32, 1);
+                user-select: none;
+                -webkit-user-select: none;
+                touch-action: manipulation;
+                will-change: transform;
+                :hover {
+                  color: #fff;
+                  background-color: #1a1a1a;
+                  box-shadow: rgba(0, 0, 0, 0.25) 0 8px 15px;
+                  transform: translateY(-2px);
+                }
+                :active {
+                  box-shadow: none;
+                  transform: translateY(0);
+                }
+              `}
+              key={index}
+              onClick={(event) => {
+                setFilterTime({ selected: index, value: filterOption.months });
+              }}
+            >
+              {filterOption.label}
+            </text>
+          ))}
         </div>
       </form>
 

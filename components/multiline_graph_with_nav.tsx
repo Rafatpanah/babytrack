@@ -14,6 +14,10 @@ import {
 } from "./types";
 import { css } from "@emotion/react";
 
+// function to bound slider range
+const clamp = (n: number, min: number, max: number) =>
+  Math.max(Math.min(n, max), min);
+
 // data must be sorted in ascending order
 // data must not have null or undefined value pairs
 
@@ -200,7 +204,7 @@ export default function MultiLineGraphWithBars(
       let yAxis = d3.axisLeft(yScale).ticks(3);
       d3.select(yAxisRef.current).call(yAxis).style("fontSize", 14);
     }
-  }, [xScaleAll, yScale]);
+  }, [xScale, yScale]);
 
   const interpolateXPt = (array: d3Line, x: number) => {
     // return if requested value is outside of array scope
@@ -295,15 +299,11 @@ export default function MultiLineGraphWithBars(
     return 100;
   };
 
-  // function to bound slider range
-  const clamp = (n: number, min: number, max: number) =>
-    Math.max(Math.min(n, max), min);
-
   const [sliderState, setSliderState] = useState(() => ({
     // start: min,
     // width: totalWidth,
     start: 50,
-    width: 0,
+    width: -1,
   }));
   const sliderRef = useRef({
     start: sliderState.start,
@@ -485,31 +485,31 @@ export default function MultiLineGraphWithBars(
     })();
   };
 
+  function handleResize() {
+    const navWidth = navRef.current?.clientWidth ?? 0;
+    const min = navWidth * ratio.left;
+    const totalWidth = navWidth - navWidth * ratio.right - min;
+
+    const startPercent = clamp(
+      (dateRangeRef.current.start - axisRangeAllDataFlat.x[0]) /
+        (axisRangeAllDataFlat.x[1] - axisRangeAllDataFlat.x[0]),
+      0,
+      1
+    );
+    const endPercent = clamp(
+      (dateRangeRef.current.end - axisRangeAllDataFlat.x[0]) /
+        (axisRangeAllDataFlat.x[1] - axisRangeAllDataFlat.x[0]),
+      0,
+      1
+    );
+
+    setSliderState(() => ({
+      start: startPercent * totalWidth + min,
+      width: (endPercent - startPercent) * totalWidth,
+    }));
+  }
+
   useEffect(() => {
-    function handleResize() {
-      const navWidth = navRef.current?.clientWidth ?? 0;
-      const min = navWidth * ratio.left;
-      const totalWidth = navWidth - navWidth * ratio.right - min;
-
-      const startPercent = clamp(
-        (dateRangeRef.current.start - axisRangeAllDataFlat.x[0]) /
-          (axisRangeAllDataFlat.x[1] - axisRangeAllDataFlat.x[0]),
-        0,
-        1
-      );
-      const endPercent = clamp(
-        (dateRangeRef.current.end - axisRangeAllDataFlat.x[0]) /
-          (axisRangeAllDataFlat.x[1] - axisRangeAllDataFlat.x[0]),
-        0,
-        1
-      );
-
-      setSliderState(() => ({
-        start: startPercent * totalWidth + min,
-        width: (endPercent - startPercent) * totalWidth,
-      }));
-    }
-
     window.addEventListener("resize", handleResize);
 
     return () => window.removeEventListener("resize", handleResize);
@@ -531,22 +531,39 @@ export default function MultiLineGraphWithBars(
             ];
       })
     );
-  }, [sliderState, lineGraphData.data]);
+  }, [sliderState]);
 
   useEffect(() => {
-    setSliderState(() => ({
-      start: dateRangeRef.current.startPercent * totalWidth + min,
-      width:
-        (dateRangeRef.current.endPercent - dateRangeRef.current.startPercent) *
-        totalWidth,
-    }));
-  }, [totalWidth]);
+    if (sliderState.width === -1) {
+      handleResize();
+    } else {
+      const startPercent = (sliderState.start - min) / totalWidth;
+      const start = Math.round(
+        axisRangeAllDataFlat.x[0] +
+          (axisRangeAllDataFlat.x[1] - axisRangeAllDataFlat.x[0]) * startPercent
+      );
+
+      const endPercent =
+        (sliderState.start + sliderState.width - min) / totalWidth;
+      const end = Math.round(
+        axisRangeAllDataFlat.x[0] +
+          (axisRangeAllDataFlat.x[1] - axisRangeAllDataFlat.x[0]) * endPercent
+      );
+
+      dateRangeRef.current.start = start;
+      dateRangeRef.current.startPercent = startPercent;
+      dateRangeRef.current.end = end;
+      dateRangeRef.current.endPercent = endPercent;
+
+      setSliderState((state) => ({ ...state }));
+    }
+  }, [lineGraphData.data, totalWidth]);
 
   return (
     <div
       css={css`
         position: relative;
-        opacity: ${sliderState.width === 0 ? 0 : 1};
+        opacity: ${sliderState.width === -1 ? 0 : 1};
       `}
     >
       <svg
@@ -913,7 +930,13 @@ export default function MultiLineGraphWithBars(
             </button>
           </nav>
         </figure>
-        <div>
+        <div
+          css={css`
+            display: block;
+            text-align: center;
+            padding: 2px;
+          `}
+        >
           <label>
             Start Date:&nbsp;
             <input
@@ -947,7 +970,7 @@ export default function MultiLineGraphWithBars(
           </label>
 
           <label>
-            End Date:&nbsp;
+            &nbsp;End Date:&nbsp;
             <input
               type="date"
               min={formatDate(dateRangeRef.current.start)}
