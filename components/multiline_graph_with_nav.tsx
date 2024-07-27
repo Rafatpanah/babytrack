@@ -516,21 +516,76 @@ export default function MultiLineGraphWithBars(
   }, [ratio]);
 
   useEffect(() => {
-    setPlotData(() =>
-      lineGraphData.data.map((currMetric) => {
-        const filteredData = currMetric.filter(
-          (point) =>
-            point[0] >= dateRangeRef.current.start &&
-            point[0] <= dateRangeRef.current.end
-        );
-        return filteredData.length > 0
-          ? filteredData
-          : [
-              [0, 0],
-              [0, 0],
-            ];
-      })
-    );
+    const filteredData = lineGraphData.data.map((currMetric) => {
+      const filteredMetric = currMetric.filter(
+        (point) =>
+          point[0] >= dateRangeRef.current.start &&
+          point[0] <= dateRangeRef.current.end
+      );
+      return filteredMetric.length > 0
+        ? filteredMetric
+        : [[0, 0] as d3LinePoint, [0, 0] as d3LinePoint];
+    });
+
+    const filteredDataToGraphBounds = filteredData.map((currMetric, index) => {
+      if (currMetric[0][0] === 0) {
+        return currMetric;
+      } else if (
+        currMetric[0][0] > dateRangeRef.current.start &&
+        dateRangeRef.current.start > lineGraphData.data[index][0][0]
+      ) {
+        if (
+          currMetric[currMetric.length - 1][0] < dateRangeRef.current.end &&
+          dateRangeRef.current.end <
+            lineGraphData.data[index][lineGraphData.data[index].length - 1][0]
+        ) {
+          return [
+            [
+              dateRangeRef.current.start,
+              interpolateXPt(
+                lineGraphData.data[index],
+                dateRangeRef.current.start
+              ),
+            ] as d3LinePoint,
+            ...currMetric,
+            [
+              dateRangeRef.current.end,
+              interpolateXPt(
+                lineGraphData.data[index],
+                dateRangeRef.current.end
+              ),
+            ] as d3LinePoint,
+          ];
+        } else {
+          return [
+            [
+              dateRangeRef.current.start,
+              interpolateXPt(
+                lineGraphData.data[index],
+                dateRangeRef.current.start
+              ),
+            ] as d3LinePoint,
+            ...currMetric,
+          ];
+        }
+      } else if (
+        currMetric[currMetric.length - 1][0] < dateRangeRef.current.end &&
+        dateRangeRef.current.end <
+          lineGraphData.data[index][lineGraphData.data[index].length - 1][0]
+      ) {
+        return [
+          ...currMetric,
+          [
+            dateRangeRef.current.end,
+            interpolateXPt(lineGraphData.data[index], dateRangeRef.current.end),
+          ] as d3LinePoint,
+        ];
+      } else {
+        return currMetric;
+      }
+    });
+
+    setPlotData(() => filteredDataToGraphBounds);
   }, [sliderState]);
 
   useEffect(() => {
@@ -772,6 +827,10 @@ export default function MultiLineGraphWithBars(
                     // alignmentBaseline="middle"
                     textAnchor="middle"
                     dominantBaseline="middle"
+                    opacity={setTransparencyIfOutOfRange(
+                      xScale.invert(cursorLabel.xPosition).valueOf(),
+                      currMetric
+                    )}
                     style={{
                       fontSize: labelBox.fontSize,
                       fill: indexToColor(index),

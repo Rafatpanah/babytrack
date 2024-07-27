@@ -197,7 +197,8 @@ export default function Home() {
     [Date.parse("22 Apr 2024 13:57:00 EST").valueOf(), 9 + 9 / 16],
     [Date.parse("10 May 2024 13:56:00 EST").valueOf(), 11 + 4.5 / 16],
     [Date.parse("05 Jun 2024 12:24:00 EST").valueOf(), 12 + 12.4 / 16],
-    [Date.parse("21 Jun 2024 12:24:00 EST").valueOf(), 14 + 2 / 16],
+    [Date.parse("21 Jun 2024 12:24:00 EST").valueOf(), 14 + 1 / 16],
+    [Date.parse("12 Jul 2024 14:37:00 EST").valueOf(), 14 + 15 / 16],
   ] as d3Line;
 
   const curr_time = new Date().valueOf();
