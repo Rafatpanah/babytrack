@@ -3,7 +3,6 @@
 
 import { css } from "@emotion/react";
 import Image from "next/image";
-// import styles from "./page.module.css";
 import MultiLineGraph from "../../components/multiline_graph_with_nav";
 import {
   d3Line,
@@ -199,16 +198,34 @@ export default function Home() {
     [Date.parse("05 Jun 2024 12:24:00 EST").valueOf(), 12 + 12.4 / 16],
     [Date.parse("21 Jun 2024 12:24:00 EST").valueOf(), 14 + 1 / 16],
     [Date.parse("12 Jul 2024 14:37:00 EST").valueOf(), 14 + 15 / 16],
+    [Date.parse("6 Aug 2024 14:00:00 EST").valueOf(), 15 + 11.2 / 16],
   ] as d3Line;
+
+  const [weightData, setWeightData] = useState(() => LunaWeight);
 
   const curr_time = new Date().valueOf();
   const birthTime = Date.parse("09 Mar 2024 23:07:00 EST").valueOf();
 
+  const timeZoneOffsetMSec =
+    new Date(birthTime).getTimezoneOffset() * 60 * 1000;
+  const timeZoneName = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  // function to format the dates for the date pickers
+  const formatDate = (date: string | number | Date) =>
+    (typeof date === "object") === true || typeof date === "string"
+      ? new Date(date).toISOString().slice(0, 10)
+      : new Date(date - timeZoneOffsetMSec).toISOString().slice(0, 10);
+
+  const formatTime = (date: string | number | Date) =>
+    (typeof date === "object") === true || typeof date === "string"
+      ? new Date(date).toISOString().slice(0, 10)
+      : new Date(date - timeZoneOffsetMSec).toISOString().slice(11, 16);
+
   const oneMonth = 30 * 24 * 60 * 60 * 1000;
   const kgToLb = 2.20462;
-  const dates = girlWeight.map((row) => row[0] * oneMonth);
 
   const filterOptions = [
+    { label: "1 Week", months: 0.25 },
     { label: "3 Months", months: 3 },
     { label: "6 Months", months: 6 },
     { label: "1 Year", months: 12 },
@@ -241,8 +258,289 @@ export default function Home() {
           text-align: center;
         `}
       >
-        Stuff n Things
+        BabyTrack
       </h2>
+
+      <table
+        css={css`
+          font-size: min(12px, 2.3vw);
+          border: solid;
+          border-radius: 15px;
+          border-width: 2px;
+          padding: 5px;
+          width: min(90%, 600px);
+          margin: 20px auto;
+          & > tbody > tr > td {
+            padding: 5px;
+            text-align: center;
+            vertical-align: middle;
+            & > input {
+              text-align: center;
+              font-size: min(12px, 2.3vw);
+            }
+          }
+          & > :is(thead, tbody) tr:nth-of-type(2n) {
+            background-color: rgba(0, 0, 0, 0.08);
+          }
+        `}
+      >
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Weight</th>
+            <th>Delete</th>
+          </tr>
+        </thead>
+        <tbody>
+          {weightData.map((entry, index) => (
+            <tr key={index}>
+              <td>
+                <input
+                  css={css`
+                    width: min(125px, 20vw);
+                  `}
+                  type="date"
+                  min={formatDate(
+                    index === 0 ? birthTime : weightData[index - 1][0]
+                  )}
+                  max={formatDate(
+                    index === weightData.length - 1
+                      ? birthTime * 10
+                      : weightData[index + 1][0]
+                  )}
+                  value={formatDate(entry[0])}
+                  onChange={(event) => {
+                    setWeightData(() =>
+                      weightData.map((item, index2) =>
+                        index === index2
+                          ? [
+                              new Date(event.target.value).valueOf() +
+                                (weightData[index][0] -
+                                  new Date(
+                                    formatDate(
+                                      new Date(weightData[index][0]).toString()
+                                    )
+                                  ).valueOf()),
+                              item[1],
+                            ]
+                          : item
+                      )
+                    );
+                  }}
+                />
+              </td>
+              <td>
+                <input
+                  css={css`
+                    width: min(110px, 20vw);
+                  `}
+                  type="time"
+                  value={formatTime(entry[0])}
+                  onChange={(event) => {
+                    setWeightData(() =>
+                      weightData.map((item, index2) =>
+                        index === index2
+                          ? [
+                              new Date(
+                                formatDate(
+                                  new Date(
+                                    weightData[index][0] - timeZoneOffsetMSec
+                                  ).toString()
+                                )
+                              ).valueOf() +
+                                (parseInt(event.target.value.split(":")[0]) *
+                                  60 +
+                                  parseInt(event.target.value.split(":")[1])) *
+                                  60 *
+                                  1000 +
+                                timeZoneOffsetMSec,
+
+                              item[1],
+                            ]
+                          : item
+                      )
+                    );
+                  }}
+                />
+              </td>
+              <td
+                css={css`
+                  & > input {
+                    width: min(45px, 8vw);
+                  }
+                `}
+              >
+                <input
+                  type="text"
+                  value={Math.floor(entry[1])}
+                  onChange={(event) => {
+                    if (!isNaN(parseInt(event.target.value))) {
+                      setWeightData(() =>
+                        weightData.map((item, index2) =>
+                          index === index2
+                            ? [
+                                item[0],
+
+                                parseInt(event.target.value) +
+                                  (item[1] - Math.floor(item[1])),
+                              ]
+                            : item
+                        )
+                      );
+                    }
+                  }}
+                />{" "}
+                lb{" "}
+                <input
+                  type="text"
+                  value={
+                    Math.round((entry[1] - Math.floor(entry[1])) * 16 * 10) / 10
+                  }
+                  onChange={(event) => {
+                    if (!isNaN(Number(event.target.value))) {
+                      setWeightData(() =>
+                        weightData.map((item, index2) =>
+                          index === index2
+                            ? [
+                                item[0],
+
+                                Math.floor(item[1]) +
+                                  Number(event.target.value) / 16,
+                              ]
+                            : item
+                        )
+                      );
+                    }
+                  }}
+                />{" "}
+                oz
+              </td>
+              <td>
+                <text
+                  css={css`
+                    appearance: none;
+                    background-color: transparent;
+                    border: 2px solid #1a1a1a;
+                    border-radius: 10px;
+                    box-sizing: border-box;
+                    color: #3b3b3b;
+                    cursor: pointer;
+                    display: inline-block;
+                    font-family: Roobert, -apple-system, BlinkMacSystemFont,
+                      "Segoe UI", Helvetica, Arial, sans-serif,
+                      "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+                    font-size: min(2.3vw, 20px);
+                    font-weight: 600;
+                    line-height: normal;
+                    min-height: min(6vw, 30px);
+                    min-width: 0;
+                    outline: none;
+                    padding: min(0.2vw, 1px), 50px;
+                    text-align: center;
+                    text-decoration: none;
+                    transition: all 300ms cubic-bezier(0.23, 1, 0.32, 1);
+                    user-select: none;
+                    -webkit-user-select: none;
+                    touch-action: manipulation;
+                    will-change: transform;
+                    :hover {
+                      color: #fff;
+                      background-color: #1a1a1a;
+                      box-shadow: rgba(0, 0, 0, 0.25) 0 8px 15px;
+                      transform: translateY(-2px);
+                    }
+                  `}
+                  key={index}
+                  onClick={() => {
+                    setWeightData(() =>
+                      weightData.filter((item, index2) => {
+                        if (index !== index2) {
+                          return item;
+                        }
+                      })
+                    );
+                  }}
+                >
+                  &nbsp;&nbsp;&times;&nbsp;&nbsp;
+                </text>
+              </td>
+            </tr>
+          ))}
+          <tr>
+            <td>
+              <input
+                css={css`
+                  width: min(125px, 20vw);
+                `}
+                type="date"
+                onChange={(event) => {
+                  setWeightData(() => weightData);
+                }}
+              />
+            </td>
+            <td>
+              <input
+                css={css`
+                  width: min(110px, 20vw);
+                `}
+                type="time"
+                onChange={(event) => {
+                  setWeightData(() => weightData);
+                }}
+              />
+            </td>
+            <td
+              css={css`
+                & > input {
+                  width: min(45px, 8vw);
+                }
+              `}
+            >
+              <input type="text" /> lb <input type="text" /> oz
+            </td>
+            <td>
+              <text
+                css={css`
+                  appearance: none;
+                  background-color: transparent;
+                  border: 2px solid #1a1a1a;
+                  border-radius: 10px;
+                  box-sizing: border-box;
+                  color: #3b3b3b;
+                  cursor: pointer;
+                  display: inline-block;
+                  font-family: Roobert, -apple-system, BlinkMacSystemFont,
+                    "Segoe UI", Helvetica, Arial, sans-serif,
+                    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+                  font-size: min(2.3vw, 20px);
+                  font-weight: 600;
+                  line-height: normal;
+                  min-height: min(6vw, 30px);
+                  min-width: 0;
+                  outline: none;
+                  padding: min(0.2vw, 1px), 50px;
+                  text-align: center;
+                  text-decoration: none;
+                  transition: all 300ms cubic-bezier(0.23, 1, 0.32, 1);
+                  user-select: none;
+                  -webkit-user-select: none;
+                  touch-action: manipulation;
+                  will-change: transform;
+                  :hover {
+                    color: #fff;
+                    background-color: #1a1a1a;
+                    box-shadow: rgba(0, 0, 0, 0.25) 0 8px 15px;
+                    transform: translateY(-2px);
+                  }
+                `}
+              >
+                &nbsp;&nbsp;&#43;&nbsp;&nbsp;
+              </text>
+            </td>
+          </tr>
+        </tbody>
+      </table>
 
       <text
         css={css`
@@ -321,7 +619,7 @@ export default function Home() {
             totalHeight: 300,
             title: "Growth Chart (girl)",
             y1AxisTitle: "weight (lb)",
-            data: [weight90, weight50, weight10, LunaWeight],
+            data: [weight90, weight50, weight10, weightData],
             lineLabel: ["90%", "50%", "10%", "Luna"],
             legend: true,
             isRefLine: [true, true, true, false],
