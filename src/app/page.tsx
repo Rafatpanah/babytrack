@@ -10,7 +10,66 @@ import {
   d3LineRange,
   XYPoint,
 } from "../../components/types";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { isNumber } from "util";
+
+const clamp = (n: number, min: number, max: number) =>
+  Math.max(Math.min(n, max), min);
+
+// function to format the dates for the date pickers
+const formatDatefromObject = (
+  date: string | number | Date | null,
+  timeZoneOffsetMSec: number
+) => {
+  if (date === null) {
+    return "";
+  } else
+    return (typeof date === "object") === true || typeof date === "string"
+      ? new Date(date).toISOString().slice(0, 10)
+      : new Date(date - timeZoneOffsetMSec).toISOString().slice(0, 10);
+};
+
+const formatTimefromObject = (
+  date: string | number | Date,
+  timeZoneOffsetMSec: number
+) =>
+  (typeof date === "object") === true || typeof date === "string"
+    ? new Date(date).toISOString().slice(0, 10)
+    : new Date(date - timeZoneOffsetMSec).toISOString().slice(11, 16);
+
+const formatTimefromNumber = (data: {
+  hours: number | null;
+  minutes: number | null;
+}) => {
+  if (data.hours === null && data.minutes === null) {
+    return "";
+  } else if (data.hours === null || data.minutes === null) {
+    return "";
+  }
+  const hoursString = data.hours < 10 ? "0" + data.hours : "" + data.hours;
+  const minutesString =
+    data.minutes < 10 ? "0" + data.minutes : "" + data.minutes;
+  return hoursString + ":" + minutesString;
+};
+
+const weightOzValidation = (data: { new: number | string }) => {
+  if (data.new === "") {
+    return 0;
+  } else if (typeof data.new === "string") {
+    const newValue = parseInt(data.new);
+    return isNaN(newValue) ? 0 : clamp(newValue, 0, 15);
+  }
+  return clamp(data.new, 0, 15);
+};
+const weightLbValidation = (data: { new: number | string }) => {
+  if (data.new === "") {
+    return 0;
+  } else if (typeof data.new === "string") {
+    const newValue = parseInt(data.new);
+    return isNaN(newValue) ? 0 : newValue;
+  }
+  return data.new;
+};
 
 export default function Home() {
   const girlWeight =
@@ -200,8 +259,132 @@ export default function Home() {
     [Date.parse("12 Jul 2024 14:37:00 EST").valueOf(), 14 + 15 / 16],
     [Date.parse("6 Aug 2024 14:00:00 EST").valueOf(), 15 + 11.2 / 16],
   ] as d3Line;
+  const hoursToMS = 1 * 60 * 60 * 1000;
+  const minToMS = 1 * 60 * 1000;
 
-  const [weightData, setWeightData] = useState(() => LunaWeight);
+  // unix date, time in ms, lb, oz
+  type WeightDataSingle = {
+    date: number;
+    timeHours: number;
+    timeMinutes: number;
+    weightLb: number;
+    weightOz: number;
+  };
+  type WeightDataSingleOpt = {
+    date?: number;
+    timeHours?: number;
+    timeMinutes?: number;
+    weightLb?: number;
+    weightOz?: number;
+  };
+  type WeightData = Array<WeightDataSingle>;
+
+  const LunaWeight2: WeightData = [
+    {
+      date: Date.parse("09 Mar 2024").valueOf(),
+      timeHours: 23,
+      timeMinutes: 7,
+      weightLb: 5,
+      weightOz: 14,
+    },
+    {
+      date: Date.parse("11 Mar 2024").valueOf(),
+      timeHours: 0,
+      timeMinutes: 33,
+      weightLb: 5,
+      weightOz: 10,
+    },
+    {
+      date: Date.parse("12 Mar 2024").valueOf(),
+      timeHours: 4,
+      timeMinutes: 24,
+      weightLb: 5,
+      weightOz: 6.4,
+    },
+    {
+      date: Date.parse("14 Mar 2024").valueOf(),
+      timeHours: 11,
+      timeMinutes: 43,
+      weightLb: 5,
+      weightOz: 10,
+    },
+    {
+      date: Date.parse("21 Mar 2024").valueOf(),
+      timeHours: 11,
+      timeMinutes: 11,
+      weightLb: 6,
+      weightOz: 1.5,
+    },
+    {
+      date: Date.parse("02 Apr 2024").valueOf(),
+      timeHours: 3,
+      timeMinutes: 58,
+      weightLb: 6,
+      weightOz: 13.5,
+    },
+    {
+      date: Date.parse("22 Apr 2024").valueOf(),
+      timeHours: 1,
+      timeMinutes: 52,
+      weightLb: 9,
+      weightOz: 9,
+    },
+    {
+      date: Date.parse("10 May 2024").valueOf(),
+      timeHours: 1,
+      timeMinutes: 56,
+      weightLb: 11,
+      weightOz: 4.5,
+    },
+    {
+      date: Date.parse("05 Jun 2024").valueOf(),
+      timeHours: 12,
+      timeMinutes: 24,
+      weightLb: 12,
+      weightOz: 12.4,
+    },
+    {
+      date: Date.parse("21 Jun 2024").valueOf(),
+      timeHours: 12,
+      timeMinutes: 24,
+      weightLb: 14,
+      weightOz: 1,
+    },
+    {
+      date: Date.parse("12 Jul 2024").valueOf(),
+      timeHours: 14,
+      timeMinutes: 37,
+      weightLb: 14,
+      weightOz: 15,
+    },
+    {
+      date: Date.parse("06 Aug 2024").valueOf(),
+      timeHours: 14,
+      timeMinutes: 9,
+      weightLb: 15,
+      weightOz: 11.2,
+    },
+    {
+      date: Date.parse("06 Sep 2024").valueOf(),
+      timeHours: 14,
+      timeMinutes: 0,
+      weightLb: 16,
+      weightOz: 1,
+    },
+    {
+      date: Date.parse("13 Sep 2024").valueOf(),
+      timeHours: 15,
+      timeMinutes: 0,
+      weightLb: 16,
+      weightOz: 7,
+    },
+  ];
+
+  const [weightData, SetWeightData] = useState<WeightData>(() => LunaWeight2);
+
+  type InputLine = (WeightDataSingleOpt & { updatePending: boolean }) | null;
+
+  const [inputLine, SetInputLine] = useState<InputLine>(() => null);
 
   const curr_time = new Date().valueOf();
   const birthTime = Date.parse("09 Mar 2024 23:07:00 EST").valueOf();
@@ -210,18 +393,7 @@ export default function Home() {
     new Date(birthTime).getTimezoneOffset() * 60 * 1000;
   const timeZoneName = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-  // function to format the dates for the date pickers
-  const formatDate = (date: string | number | Date) =>
-    (typeof date === "object") === true || typeof date === "string"
-      ? new Date(date).toISOString().slice(0, 10)
-      : new Date(date - timeZoneOffsetMSec).toISOString().slice(0, 10);
-
-  const formatTime = (date: string | number | Date) =>
-    (typeof date === "object") === true || typeof date === "string"
-      ? new Date(date).toISOString().slice(0, 10)
-      : new Date(date - timeZoneOffsetMSec).toISOString().slice(11, 16);
-
-  const oneMonth = 30 * 24 * 60 * 60 * 1000;
+  const oneMonth = (365 / 12) * 24 * 60 * 60 * 1000;
   const kgToLb = 2.20462;
 
   const filterOptions = [
@@ -250,6 +422,18 @@ export default function Home() {
   const weight90 = girlWeightFiltered.map(
     (row) => [row[0] * oneMonth + birthTime, row[10] * kgToLb] as d3LinePoint
   );
+
+  // useEffect(() => {
+  //   // const ordered = weightData.map((item)=>(
+  //   //   item.sort((a, b) => a - b)
+  //   // ));
+
+  //   const ordered = weightData.sort((a, b) => a[0] - b[0]);
+
+  //   console.log({ weightData, ordered });
+
+  //   SetWeightData(() => ordered);
+  // }, [weightData]);
 
   return (
     <main>
@@ -301,29 +485,25 @@ export default function Home() {
                     width: min(125px, 20vw);
                   `}
                   type="date"
-                  min={formatDate(
-                    index === 0 ? birthTime : weightData[index - 1][0]
-                  )}
-                  max={formatDate(
-                    index === weightData.length - 1
-                      ? birthTime * 10
-                      : weightData[index + 1][0]
-                  )}
-                  value={formatDate(entry[0])}
+                  // min={formatDate(
+                  //   index === 0 ? birthTime : weightData[index - 1][0]
+                  // )}
+                  // max={formatDate(
+                  //   index === weightData.length - 1
+                  //     ? birthTime * 10
+                  //     : weightData[index + 1][0]
+                  // )}
+                  value={formatDatefromObject(entry.date, timeZoneOffsetMSec)}
                   onChange={(event) => {
-                    setWeightData(() =>
+                    SetWeightData(() =>
                       weightData.map((item, index2) =>
                         index === index2
-                          ? [
-                              new Date(event.target.value).valueOf() +
-                                (weightData[index][0] -
-                                  new Date(
-                                    formatDate(
-                                      new Date(weightData[index][0]).toString()
-                                    )
-                                  ).valueOf()),
-                              item[1],
-                            ]
+                          ? {
+                              ...item,
+                              date:
+                                new Date(event.target.value).valueOf() +
+                                timeZoneOffsetMSec,
+                            }
                           : item
                       )
                     );
@@ -336,28 +516,20 @@ export default function Home() {
                     width: min(110px, 20vw);
                   `}
                   type="time"
-                  value={formatTime(entry[0])}
+                  value={formatTimefromNumber({
+                    hours: entry.timeHours,
+                    minutes: entry.timeMinutes,
+                  })}
                   onChange={(event) => {
-                    setWeightData(() =>
+                    const [hours, minutes] = event.target.value.split(":");
+                    SetWeightData(() =>
                       weightData.map((item, index2) =>
                         index === index2
-                          ? [
-                              new Date(
-                                formatDate(
-                                  new Date(
-                                    weightData[index][0] - timeZoneOffsetMSec
-                                  ).toString()
-                                )
-                              ).valueOf() +
-                                (parseInt(event.target.value.split(":")[0]) *
-                                  60 +
-                                  parseInt(event.target.value.split(":")[1])) *
-                                  60 *
-                                  1000 +
-                                timeZoneOffsetMSec,
-
-                              item[1],
-                            ]
+                          ? {
+                              ...item,
+                              timeHours: parseInt(hours),
+                              timeMinutes: parseInt(minutes),
+                            }
                           : item
                       )
                     );
@@ -373,48 +545,42 @@ export default function Home() {
               >
                 <input
                   type="text"
-                  value={Math.floor(entry[1])}
+                  value={entry.weightLb}
                   onChange={(event) => {
-                    if (!isNaN(parseInt(event.target.value))) {
-                      setWeightData(() =>
-                        weightData.map((item, index2) =>
-                          index === index2
-                            ? [
-                                item[0],
-
-                                parseInt(event.target.value) +
-                                  (item[1] - Math.floor(item[1])),
-                              ]
-                            : item
-                        )
-                      );
-                    }
+                    SetWeightData(() =>
+                      weightData.map((item, index2) =>
+                        index === index2
+                          ? {
+                              ...item,
+                              weightLb: weightLbValidation({
+                                new: event.target.value,
+                              }),
+                            }
+                          : item
+                      )
+                    );
                   }}
-                />{" "}
-                lb{" "}
+                />
+                &nbsp;lb&nbsp;
                 <input
                   type="text"
-                  value={
-                    Math.round((entry[1] - Math.floor(entry[1])) * 16 * 10) / 10
-                  }
+                  value={entry.weightOz}
                   onChange={(event) => {
-                    if (!isNaN(Number(event.target.value))) {
-                      setWeightData(() =>
-                        weightData.map((item, index2) =>
-                          index === index2
-                            ? [
-                                item[0],
-
-                                Math.floor(item[1]) +
-                                  Number(event.target.value) / 16,
-                              ]
-                            : item
-                        )
-                      );
-                    }
+                    SetWeightData(() =>
+                      weightData.map((item, index2) =>
+                        index === index2
+                          ? {
+                              ...item,
+                              weightOz: weightOzValidation({
+                                new: event.target.value,
+                              }),
+                            }
+                          : item
+                      )
+                    );
                   }}
-                />{" "}
-                oz
+                />
+                &nbsp;oz
               </td>
               <td>
                 <text
@@ -453,12 +619,8 @@ export default function Home() {
                   `}
                   key={index}
                   onClick={() => {
-                    setWeightData(() =>
-                      weightData.filter((item, index2) => {
-                        if (index !== index2) {
-                          return item;
-                        }
-                      })
+                    SetWeightData(() =>
+                      weightData.filter((item, index2) => index !== index2)
                     );
                   }}
                 >
@@ -467,6 +629,8 @@ export default function Home() {
               </td>
             </tr>
           ))}
+
+          {/* last row */}
           <tr>
             <td>
               <input
@@ -474,8 +638,18 @@ export default function Home() {
                   width: min(125px, 20vw);
                 `}
                 type="date"
+                value={formatDatefromObject(
+                  inputLine?.date ?? null,
+                  timeZoneOffsetMSec
+                )}
                 onChange={(event) => {
-                  setWeightData(() => weightData);
+                  SetInputLine(() => ({
+                    ...inputLine,
+                    date:
+                      new Date(event.target.value).valueOf() +
+                      timeZoneOffsetMSec,
+                    updatePending: true,
+                  }));
                 }}
               />
             </td>
@@ -485,8 +659,19 @@ export default function Home() {
                   width: min(110px, 20vw);
                 `}
                 type="time"
+                value={formatTimefromNumber({
+                  hours: inputLine?.timeHours ?? null,
+                  minutes: inputLine?.timeMinutes ?? null,
+                })}
                 onChange={(event) => {
-                  setWeightData(() => weightData);
+                  const [hours, minutes] = event.target.value.split(":");
+
+                  SetInputLine(() => ({
+                    ...inputLine,
+                    timeHours: parseInt(hours),
+                    timeMinutes: parseInt(minutes),
+                    updatePending: true,
+                  }));
                 }}
               />
             </td>
@@ -497,7 +682,30 @@ export default function Home() {
                 }
               `}
             >
-              <input type="text" /> lb <input type="text" /> oz
+              <input
+                type="text"
+                value={inputLine?.weightLb ?? ""}
+                onChange={(event) => {
+                  SetInputLine(() => ({
+                    ...inputLine,
+                    weightLb: weightLbValidation({ new: event.target.value }),
+                    updatePending: true,
+                  }));
+                }}
+              />
+              &nbsp;lb&nbsp;
+              <input
+                type="text"
+                value={inputLine?.weightOz ?? ""}
+                onChange={(event) => {
+                  SetInputLine(() => ({
+                    ...inputLine,
+                    weightOz: weightOzValidation({ new: event.target.value }),
+                    updatePending: true,
+                  }));
+                }}
+              />
+              &nbsp;oz
             </td>
             <td>
               <text
@@ -534,6 +742,31 @@ export default function Home() {
                     transform: translateY(-2px);
                   }
                 `}
+                onClick={(event) => {
+                  if (inputLine !== null) {
+                    if (
+                      inputLine.date &&
+                      inputLine.timeHours &&
+                      inputLine.timeMinutes &&
+                      inputLine.weightLb &&
+                      inputLine.weightOz
+                    ) {
+                      const test: WeightDataSingle = {
+                        date: inputLine.date,
+                        timeHours: inputLine.timeHours,
+                        timeMinutes: inputLine.timeMinutes,
+                        weightLb: inputLine.weightLb,
+                        weightOz: inputLine.weightOz,
+                      };
+                      SetWeightData(() => [...weightData, test]);
+                      SetInputLine(() => null);
+                    } else {
+                      console.log("everything isn't defined");
+                    }
+                  } else {
+                    console.log("it's null");
+                  }
+                }}
               >
                 &nbsp;&nbsp;&#43;&nbsp;&nbsp;
               </text>
@@ -619,7 +852,19 @@ export default function Home() {
             totalHeight: 300,
             title: "Growth Chart (girl)",
             y1AxisTitle: "weight (lb)",
-            data: [weight90, weight50, weight10, weightData],
+            data: [
+              weight90,
+              weight50,
+              weight10,
+              weightData.length === 0
+                ? [[0, 0]]
+                : weightData.map((item) => [
+                    item.date +
+                      item.timeHours * hoursToMS +
+                      item.timeMinutes * minToMS,
+                    item.weightLb + item.weightOz / 16,
+                  ]),
+            ],
             lineLabel: ["90%", "50%", "10%", "Luna"],
             legend: true,
             isRefLine: [true, true, true, false],
