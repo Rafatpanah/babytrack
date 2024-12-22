@@ -56,7 +56,8 @@ export default function MultiLineGraphWithBars(
   const svgRef = useRef<SVGSVGElement>(null);
   const svgLabelsRef = useRef<SVGSVGElement>(null);
 
-  const timeZoneOffsetMSec = new Date().getTimezoneOffset() * 60 * 1000;
+  const timeZoneOffsetMSec =
+    new Date(lineGraphData.data[0][0][0]).getTimezoneOffset() * 60 * 1000;
   const timeZoneName = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   const oneDay = 1 * 24 * 60 * 60 * 1000;

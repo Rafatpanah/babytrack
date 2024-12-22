@@ -10,7 +10,7 @@ import {
   d3LineRange,
   XYPoint,
 } from "../../components/types";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { isNumber } from "util";
 
 const clamp = (n: number, min: number, max: number) =>
@@ -378,16 +378,74 @@ export default function Home() {
       weightLb: 16,
       weightOz: 7,
     },
+    {
+      date: Date.parse("18 Oct 2024").valueOf(),
+      timeHours: 15,
+      timeMinutes: 0,
+      weightLb: 16,
+      weightOz: 11,
+    },
+    {
+      date: Date.parse("20 Dec 2024").valueOf(),
+      timeHours: 15,
+      timeMinutes: 0,
+      weightLb: 17,
+      weightOz: 12,
+    },
   ];
 
   const [weightData, SetWeightData] = useState<WeightData>(() => LunaWeight2);
 
-  type InputLine = (WeightDataSingleOpt & { updatePending: boolean }) | null;
+  type InputLine = (WeightDataSingleOpt & { updateRequested?: boolean }) | null;
 
   const [inputLine, SetInputLine] = useState<InputLine>(() => null);
+  const [inputLineError, SetInputLineError] = useState({
+    date: false,
+    time: false,
+    weightLb: false,
+    weightOz: false,
+  });
+
+  useEffect(() => {
+    // SetWeightData(() => weightData.toSorted((a, b) => a.date - b.date));
+    updateInputLineError();
+  }, [inputLine]);
+
+  const updateInputLineError = () => {
+    if (inputLine === null) {
+      SetInputLineError(() => ({
+        date: false,
+        time: false,
+        weightLb: false,
+        weightOz: false,
+      }));
+    } else {
+      if (inputLine.updateRequested === true) {
+        SetInputLineError(() => ({
+          date: !inputLine.hasOwnProperty("date"),
+          time: !(
+            inputLine.hasOwnProperty("timeMinutes") &&
+            inputLine.hasOwnProperty("timeHours")
+          ),
+          weightLb: !inputLine.hasOwnProperty("weightLb"),
+          weightOz: !inputLine.hasOwnProperty("weightOz"),
+        }));
+      } else {
+        SetInputLineError(() => ({
+          date: false,
+          time: false,
+          weightLb: false,
+          weightOz: false,
+        }));
+      }
+    }
+  };
 
   const curr_time = new Date().valueOf();
   const birthTime = Date.parse("09 Mar 2024 23:07:00 EST").valueOf();
+  const birthTimeOffset =
+    Date.parse("06 Apr 2024 00:00:00 EST").valueOf() -
+    Date.parse("09 Mar 2024 00:00:00 EST").valueOf();
 
   const timeZoneOffsetMSec =
     new Date(birthTime).getTimezoneOffset() * 60 * 1000;
@@ -414,26 +472,26 @@ export default function Home() {
   );
 
   const weight10 = girlWeightFiltered.map(
-    (row) => [row[0] * oneMonth + birthTime, row[6] * kgToLb] as d3LinePoint
+    (row) =>
+      [
+        row[0] * oneMonth + birthTime + birthTimeOffset,
+        row[6] * kgToLb,
+      ] as d3LinePoint
   );
   const weight50 = girlWeightFiltered.map(
-    (row) => [row[0] * oneMonth + birthTime, row[8] * kgToLb] as d3LinePoint
+    (row) =>
+      [
+        row[0] * oneMonth + birthTime + birthTimeOffset,
+        row[8] * kgToLb,
+      ] as d3LinePoint
   );
   const weight90 = girlWeightFiltered.map(
-    (row) => [row[0] * oneMonth + birthTime, row[10] * kgToLb] as d3LinePoint
+    (row) =>
+      [
+        row[0] * oneMonth + birthTime + birthTimeOffset,
+        row[10] * kgToLb,
+      ] as d3LinePoint
   );
-
-  // useEffect(() => {
-  //   // const ordered = weightData.map((item)=>(
-  //   //   item.sort((a, b) => a - b)
-  //   // ));
-
-  //   const ordered = weightData.sort((a, b) => a[0] - b[0]);
-
-  //   console.log({ weightData, ordered });
-
-  //   SetWeightData(() => ordered);
-  // }, [weightData]);
 
   return (
     <main>
@@ -445,68 +503,230 @@ export default function Home() {
         BabyTrack
       </h2>
 
-      <table
+      <details
         css={css`
-          font-size: min(12px, 2.3vw);
-          border: solid;
-          border-radius: 15px;
-          border-width: 2px;
-          padding: 5px;
-          width: min(90%, 600px);
-          margin: 20px auto;
-          & > tbody > tr > td {
-            padding: 5px;
-            text-align: center;
-            vertical-align: middle;
-            & > input {
-              text-align: center;
-              font-size: min(12px, 2.3vw);
-            }
-          }
-          & > :is(thead, tbody) tr:nth-of-type(2n) {
-            background-color: rgba(0, 0, 0, 0.08);
-          }
+          text-align: center;
+          margin: 20px;
         `}
       >
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Time</th>
-            <th>Weight</th>
-            <th>Delete</th>
-          </tr>
-        </thead>
-        <tbody>
-          {weightData.map((entry, index) => (
-            <tr key={index}>
+        <summary>Input Table</summary>
+        <table
+          css={css`
+            font-size: min(12px, 2.3vw);
+            border: solid;
+            border-radius: 15px;
+            border-width: 2px;
+            padding: 5px;
+            width: min(90%, 600px);
+            margin: 20px auto;
+            & > tbody > tr > td {
+              padding: 5px;
+              text-align: center;
+              vertical-align: middle;
+              & > input {
+                text-align: center;
+                font-size: min(12px, 2.3vw);
+              }
+            }
+            & > :is(thead, tbody) tr:nth-of-type(2n) {
+              background-color: rgba(0, 0, 0, 0.08);
+            }
+          `}
+        >
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Time</th>
+              <th>Weight</th>
+              <th>Delete</th>
+            </tr>
+          </thead>
+          <tbody>
+            {weightData.map((entry, index) => (
+              <tr key={index}>
+                <td>
+                  <input
+                    css={css`
+                      width: min(125px, 20vw);
+                    `}
+                    type="date"
+                    // min={formatDate(
+                    //   index === 0 ? birthTime : weightData[index - 1][0]
+                    // )}
+                    // max={formatDate(
+                    //   index === weightData.length - 1
+                    //     ? birthTime * 10
+                    //     : weightData[index + 1][0]
+                    // )}
+                    value={formatDatefromObject(entry.date, timeZoneOffsetMSec)}
+                    onChange={(event) => {
+                      // SetWeightData(() =>
+                      //   weightData.toSorted((a, b) => a.date - b.date)
+                      // );
+
+                      SetWeightData(() =>
+                        weightData
+                          .map((item, index2) =>
+                            index === index2
+                              ? {
+                                  ...item,
+                                  date:
+                                    new Date(event.target.value).valueOf() +
+                                    timeZoneOffsetMSec,
+                                }
+                              : item
+                          )
+                          .toSorted((a, b) => a.date - b.date)
+                      );
+                    }}
+                  />
+                </td>
+                <td>
+                  <input
+                    css={css`
+                      width: min(110px, 20vw);
+                    `}
+                    type="time"
+                    value={formatTimefromNumber({
+                      hours: entry.timeHours,
+                      minutes: entry.timeMinutes,
+                    })}
+                    onChange={(event) => {
+                      const [hours, minutes] = event.target.value.split(":");
+                      SetWeightData(() =>
+                        weightData.map((item, index2) =>
+                          index === index2
+                            ? {
+                                ...item,
+                                timeHours: parseInt(hours),
+                                timeMinutes: parseInt(minutes),
+                              }
+                            : item
+                        )
+                      );
+                    }}
+                  />
+                </td>
+                <td
+                  css={css`
+                    & > input {
+                      width: min(45px, 8vw);
+                    }
+                  `}
+                >
+                  <input
+                    type="text"
+                    value={entry.weightLb}
+                    onChange={(event) => {
+                      SetWeightData(() =>
+                        weightData.map((item, index2) =>
+                          index === index2
+                            ? {
+                                ...item,
+                                weightLb: weightLbValidation({
+                                  new: event.target.value,
+                                }),
+                              }
+                            : item
+                        )
+                      );
+                    }}
+                  />
+                  &nbsp;lb&nbsp;
+                  <input
+                    type="text"
+                    value={entry.weightOz}
+                    onChange={(event) => {
+                      SetWeightData(() =>
+                        weightData.map((item, index2) =>
+                          index === index2
+                            ? {
+                                ...item,
+                                weightOz: weightOzValidation({
+                                  new: event.target.value,
+                                }),
+                              }
+                            : item
+                        )
+                      );
+                    }}
+                  />
+                  &nbsp;oz
+                </td>
+                <td>
+                  <input
+                    readOnly={true}
+                    value="&nbsp;&nbsp;&times;&nbsp;&nbsp;"
+                    css={css`
+                      width: min(35px, 6vw);
+                      appearance: none;
+                      background-color: transparent;
+                      border: 2px solid #1a1a1a;
+                      border-radius: 10px;
+                      box-sizing: border-box;
+                      color: #3b3b3b;
+                      cursor: pointer;
+                      display: inline-block;
+                      font-family: Roobert, -apple-system, BlinkMacSystemFont,
+                        "Segoe UI", Helvetica, Arial, sans-serif,
+                        "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+                      font-size: min(10vw, 20px);
+                      font-weight: 600;
+                      line-height: normal;
+                      min-height: min(6vw, 30px);
+                      min-width: 0;
+                      outline: none;
+                      padding: min(0.2vw, 1px), 50px;
+                      text-align: center;
+                      text-decoration: none;
+                      transition: all 300ms cubic-bezier(0.23, 1, 0.32, 1);
+                      user-select: none;
+                      -webkit-user-select: none;
+                      touch-action: manipulation;
+                      will-change: transform;
+                      :hover {
+                        color: #fff;
+                        background-color: #1a1a1a;
+                        box-shadow: rgba(0, 0, 0, 0.25) 0 8px 15px;
+                        transform: translateY(-2px);
+                      }
+                    `}
+                    type="text"
+                    key={index}
+                    onClick={() => {
+                      SetWeightData(() =>
+                        weightData.filter((item, index2) => index !== index2)
+                      );
+                    }}
+                  />
+                </td>
+              </tr>
+            ))}
+
+            {/* last row */}
+            <tr>
               <td>
                 <input
                   css={css`
                     width: min(125px, 20vw);
+                    color: ${inputLineError.date ? "rgb(255,0,0)" : ""};
+                    background-color: ${inputLineError.date
+                      ? "rgba(255,0,0,0.15)"
+                      : ""};
                   `}
                   type="date"
-                  // min={formatDate(
-                  //   index === 0 ? birthTime : weightData[index - 1][0]
-                  // )}
-                  // max={formatDate(
-                  //   index === weightData.length - 1
-                  //     ? birthTime * 10
-                  //     : weightData[index + 1][0]
-                  // )}
-                  value={formatDatefromObject(entry.date, timeZoneOffsetMSec)}
+                  value={formatDatefromObject(
+                    inputLine?.date ?? null,
+                    timeZoneOffsetMSec
+                  )}
                   onChange={(event) => {
-                    SetWeightData(() =>
-                      weightData.map((item, index2) =>
-                        index === index2
-                          ? {
-                              ...item,
-                              date:
-                                new Date(event.target.value).valueOf() +
-                                timeZoneOffsetMSec,
-                            }
-                          : item
-                      )
-                    );
+                    SetInputLine(() => ({
+                      ...inputLine,
+                      date:
+                        new Date(event.target.value).valueOf() +
+                        timeZoneOffsetMSec,
+                    }));
+                    updateInputLineError();
                   }}
                 />
               </td>
@@ -514,25 +734,25 @@ export default function Home() {
                 <input
                   css={css`
                     width: min(110px, 20vw);
+                    color: ${inputLineError.time ? "rgb(255,0,0)" : ""};
+                    background-color: ${inputLineError.time
+                      ? "rgba(255,0,0,0.15)"
+                      : ""};
                   `}
                   type="time"
                   value={formatTimefromNumber({
-                    hours: entry.timeHours,
-                    minutes: entry.timeMinutes,
+                    hours: inputLine?.timeHours ?? null,
+                    minutes: inputLine?.timeMinutes ?? null,
                   })}
                   onChange={(event) => {
                     const [hours, minutes] = event.target.value.split(":");
-                    SetWeightData(() =>
-                      weightData.map((item, index2) =>
-                        index === index2
-                          ? {
-                              ...item,
-                              timeHours: parseInt(hours),
-                              timeMinutes: parseInt(minutes),
-                            }
-                          : item
-                      )
-                    );
+
+                    SetInputLine(() => ({
+                      ...inputLine,
+                      timeHours: parseInt(hours),
+                      timeMinutes: parseInt(minutes),
+                    }));
+                    updateInputLineError();
                   }}
                 />
               </td>
@@ -544,47 +764,49 @@ export default function Home() {
                 `}
               >
                 <input
+                  css={css`
+                    color: ${inputLineError.weightLb ? "rgb(255,0,0)" : ""};
+                    background-color: ${inputLineError.weightLb
+                      ? "rgba(255,0,0,0.15)"
+                      : ""};
+                  `}
                   type="text"
-                  value={entry.weightLb}
+                  value={inputLine?.weightLb ?? ""}
                   onChange={(event) => {
-                    SetWeightData(() =>
-                      weightData.map((item, index2) =>
-                        index === index2
-                          ? {
-                              ...item,
-                              weightLb: weightLbValidation({
-                                new: event.target.value,
-                              }),
-                            }
-                          : item
-                      )
-                    );
+                    SetInputLine(() => ({
+                      ...inputLine,
+                      weightLb: weightLbValidation({ new: event.target.value }),
+                    }));
+                    updateInputLineError();
                   }}
                 />
                 &nbsp;lb&nbsp;
                 <input
+                  css={css`
+                    color: ${inputLineError.weightOz ? "rgb(255,0,0)" : ""};
+                    background-color: ${inputLineError.weightOz
+                      ? "rgba(255,0,0,0.15)"
+                      : ""};
+                  `}
                   type="text"
-                  value={entry.weightOz}
+                  value={inputLine?.weightOz ?? ""}
                   onChange={(event) => {
-                    SetWeightData(() =>
-                      weightData.map((item, index2) =>
-                        index === index2
-                          ? {
-                              ...item,
-                              weightOz: weightOzValidation({
-                                new: event.target.value,
-                              }),
-                            }
-                          : item
-                      )
-                    );
+                    SetInputLine(() => ({
+                      ...inputLine,
+                      weightOz: weightOzValidation({ new: event.target.value }),
+                    }));
+                    updateInputLineError();
                   }}
                 />
                 &nbsp;oz
               </td>
               <td>
-                <text
+                <input
+                  type="text"
+                  readOnly={true}
+                  value="&nbsp;&nbsp;&#43;&nbsp;&nbsp;"
                   css={css`
+                    width: min(35px, 6vw);
                     appearance: none;
                     background-color: transparent;
                     border: 2px solid #1a1a1a;
@@ -617,163 +839,51 @@ export default function Home() {
                       transform: translateY(-2px);
                     }
                   `}
-                  key={index}
-                  onClick={() => {
-                    SetWeightData(() =>
-                      weightData.filter((item, index2) => index !== index2)
-                    );
+                  onClick={(event) => {
+                    if (inputLine !== null) {
+                      if (
+                        inputLine.date !== undefined &&
+                        inputLine.timeHours !== undefined &&
+                        inputLine.timeMinutes !== undefined &&
+                        inputLine.weightLb !== undefined &&
+                        inputLine.weightOz !== undefined
+                      ) {
+                        const test: WeightDataSingle = {
+                          date: inputLine.date,
+                          timeHours: inputLine.timeHours,
+                          timeMinutes: inputLine.timeMinutes,
+                          weightLb: inputLine.weightLb,
+                          weightOz: inputLine.weightOz,
+                        };
+                        SetWeightData(() => [...weightData, test]);
+                        SetInputLine(() => null);
+                        SetInputLineError(() => ({
+                          date: false,
+                          time: false,
+                          weightLb: false,
+                          weightOz: false,
+                        }));
+                      } else {
+                        console.log({ inputLine, inputLineError });
+                        SetInputLine(() => ({
+                          ...inputLine,
+                          updateRequested: true,
+                        }));
+                        updateInputLineError();
+                      }
+                    } else {
+                      console.log("it's null");
+                      SetInputLine(() => ({
+                        updateRequested: true,
+                      }));
+                    }
                   }}
-                >
-                  &nbsp;&nbsp;&times;&nbsp;&nbsp;
-                </text>
+                />
               </td>
             </tr>
-          ))}
-
-          {/* last row */}
-          <tr>
-            <td>
-              <input
-                css={css`
-                  width: min(125px, 20vw);
-                `}
-                type="date"
-                value={formatDatefromObject(
-                  inputLine?.date ?? null,
-                  timeZoneOffsetMSec
-                )}
-                onChange={(event) => {
-                  SetInputLine(() => ({
-                    ...inputLine,
-                    date:
-                      new Date(event.target.value).valueOf() +
-                      timeZoneOffsetMSec,
-                    updatePending: true,
-                  }));
-                }}
-              />
-            </td>
-            <td>
-              <input
-                css={css`
-                  width: min(110px, 20vw);
-                `}
-                type="time"
-                value={formatTimefromNumber({
-                  hours: inputLine?.timeHours ?? null,
-                  minutes: inputLine?.timeMinutes ?? null,
-                })}
-                onChange={(event) => {
-                  const [hours, minutes] = event.target.value.split(":");
-
-                  SetInputLine(() => ({
-                    ...inputLine,
-                    timeHours: parseInt(hours),
-                    timeMinutes: parseInt(minutes),
-                    updatePending: true,
-                  }));
-                }}
-              />
-            </td>
-            <td
-              css={css`
-                & > input {
-                  width: min(45px, 8vw);
-                }
-              `}
-            >
-              <input
-                type="text"
-                value={inputLine?.weightLb ?? ""}
-                onChange={(event) => {
-                  SetInputLine(() => ({
-                    ...inputLine,
-                    weightLb: weightLbValidation({ new: event.target.value }),
-                    updatePending: true,
-                  }));
-                }}
-              />
-              &nbsp;lb&nbsp;
-              <input
-                type="text"
-                value={inputLine?.weightOz ?? ""}
-                onChange={(event) => {
-                  SetInputLine(() => ({
-                    ...inputLine,
-                    weightOz: weightOzValidation({ new: event.target.value }),
-                    updatePending: true,
-                  }));
-                }}
-              />
-              &nbsp;oz
-            </td>
-            <td>
-              <text
-                css={css`
-                  appearance: none;
-                  background-color: transparent;
-                  border: 2px solid #1a1a1a;
-                  border-radius: 10px;
-                  box-sizing: border-box;
-                  color: #3b3b3b;
-                  cursor: pointer;
-                  display: inline-block;
-                  font-family: Roobert, -apple-system, BlinkMacSystemFont,
-                    "Segoe UI", Helvetica, Arial, sans-serif,
-                    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-                  font-size: min(2.3vw, 20px);
-                  font-weight: 600;
-                  line-height: normal;
-                  min-height: min(6vw, 30px);
-                  min-width: 0;
-                  outline: none;
-                  padding: min(0.2vw, 1px), 50px;
-                  text-align: center;
-                  text-decoration: none;
-                  transition: all 300ms cubic-bezier(0.23, 1, 0.32, 1);
-                  user-select: none;
-                  -webkit-user-select: none;
-                  touch-action: manipulation;
-                  will-change: transform;
-                  :hover {
-                    color: #fff;
-                    background-color: #1a1a1a;
-                    box-shadow: rgba(0, 0, 0, 0.25) 0 8px 15px;
-                    transform: translateY(-2px);
-                  }
-                `}
-                onClick={(event) => {
-                  if (inputLine !== null) {
-                    if (
-                      inputLine.date &&
-                      inputLine.timeHours &&
-                      inputLine.timeMinutes &&
-                      inputLine.weightLb &&
-                      inputLine.weightOz
-                    ) {
-                      const test: WeightDataSingle = {
-                        date: inputLine.date,
-                        timeHours: inputLine.timeHours,
-                        timeMinutes: inputLine.timeMinutes,
-                        weightLb: inputLine.weightLb,
-                        weightOz: inputLine.weightOz,
-                      };
-                      SetWeightData(() => [...weightData, test]);
-                      SetInputLine(() => null);
-                    } else {
-                      console.log("everything isn't defined");
-                    }
-                  } else {
-                    console.log("it's null");
-                  }
-                }}
-              >
-                &nbsp;&nbsp;&#43;&nbsp;&nbsp;
-              </text>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+          </tbody>
+        </table>
+      </details>
 
       <text
         css={css`
